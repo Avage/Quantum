@@ -21,7 +21,7 @@ COUNT_OPS = iota()
 
 
 def push(x):
-    return (OP_PUSH, x)
+    return OP_PUSH, x
 
 
 def add():
@@ -133,22 +133,11 @@ def compile_program(prg, file_path):
         out.write('   svc #0\n')
 
 
-# TODO: un-hardcode the program
-program = [
-    push(34),
-    push(35),
-    add(),
-    dump(),
-    push(420),
-    dump()
-]
-
-
-def usage():
-    print("Usage: quantum <SUBCOMMAND> [ARGS]")
+def usage(prg):
+    print(f"Usage: {prg} <SUBCOMMAND> [ARGS]")
     print("SUBCOMMANDS:")
-    print("   sim      Simulate the program")
-    print("   com      Compile the program")
+    print("   sim <file>     Simulate the program")
+    print("   com <file>     Compile the program")
 
 
 def call_cmd(cmd):
@@ -156,22 +145,58 @@ def call_cmd(cmd):
     subprocess.call(cmd)
 
 
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        usage()
-        print("ERROR: no subcommand is provided")
+def unpack(arr):
+    return arr[0], arr[1:]
 
+
+def convert_to_op(word):
+    assert COUNT_OPS == 4, 'Exhaustive handling of operands in converting to operations'
+
+    if word == '+':
+        return add()
+    elif word == '-':
+        return sub()
+    elif word == '.':
+        return dump()
+    else:
+        return push(int(word))
+
+
+def load_program(path):
+    with open(path, 'r') as f:
+        return [convert_to_op(word) for word in f.read().split()]
+
+
+if __name__ == '__main__':
+    argv = sys.argv
+    (program_name, argv) = unpack(argv)
+
+    if len(argv) < 1:
+        usage(program_name)
+        print("ERROR: no subcommand is provided")
         exit(1)
 
-    subcommand = sys.argv[1]
+    (subcommand, argv) = unpack(argv)
 
     if subcommand == 'sim':
+        if len(argv) < 1:
+            usage(program_name)
+            print("ERROR: no file is provided for simulation")
+            exit(1)
+        (program_path, argv) = unpack(argv)
+        program = load_program(program_path)
         simulate_program(program)
     elif subcommand == 'com':
+        if len(argv) < 1:
+            usage(program_name)
+            print("ERROR: no file is provided for compilation")
+            exit(1)
+        (program_path, argv) = unpack(argv)
+        program = load_program(program_path)
         compile_program(program, 'output.s')
         call_cmd(['as', '-o', 'output.o', 'output.s'])
         call_cmd(['ld', '-o', 'output', 'output.o'])
     else:
-        usage()
+        usage(program_name)
         print(f"ERROR: unknown subcommand {subcommand}")
         exit(1)

@@ -16,5 +16,6 @@ To run the compiler, use the following command:
 
 ```console
 $ python3 quantum.py com
+./output
 ```
 
