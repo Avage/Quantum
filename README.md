@@ -1,4 +1,4 @@
-<h1 style="color: #ffa7d7;">Qunatum</h1>
+<h1 style="color: #ffa7d7;">Quantum</h1>
 
 ---
 
