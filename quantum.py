@@ -6,6 +6,8 @@ iota_counter = 0
 
 
 class Token:
+    """ Token class to represent a token in the program, with the file path, row, column, and value """
+
     def __init__(self, file_path: str, row: int, col: int, value: str):
         self.file_path = file_path
         self.row = row
@@ -17,6 +19,7 @@ class Token:
 
 
 def iota(reset=False) -> int:
+    """ Iota function to generate unique integer values """
     global iota_counter
     if reset:
         iota_counter = 0
@@ -28,7 +31,7 @@ def iota(reset=False) -> int:
 OP_PUSH = iota(True)
 OP_ADD = iota()
 OP_SUB = iota()
-OP_POP = iota()
+OP_DUMP = iota()
 COUNT_OPS = iota()
 
 
@@ -44,8 +47,8 @@ def sub() -> Tuple:
     return (OP_SUB,)
 
 
-def pop() -> Tuple:
-    return (OP_POP,)
+def dump() -> Tuple:
+    return (OP_DUMP,)
 
 
 def simulate_program(prg: List[Tuple]) -> None:
@@ -63,7 +66,7 @@ def simulate_program(prg: List[Tuple]) -> None:
             a = stack.pop()
             b = stack.pop()
             stack.append(b - a)
-        elif op[0] == OP_POP:
+        elif op[0] == OP_DUMP:
             a = stack.pop()
             print(a)
         else:
@@ -79,8 +82,8 @@ def setup_macros_and_functions(out: TextIO) -> None:
     out.write('   ldr \\Xn, [sp], #16\n')
     out.write('.endm\n')
 
-    # Pop function
-    out.write('pop:\n')
+    # Dump function
+    out.write('dump:\n')
     out.write('   stp x29, x30, [sp, -48]!\n')
     out.write('   mov x7, -3689348814741910324\n')
     out.write('   mov w3, 10\n')
@@ -137,10 +140,10 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
                 out.write('   pop x1\n')
                 out.write('   sub x0, x1, x0\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_POP:
-                out.write(f'   ;; -- pop --\n')
+            elif op[0] == OP_DUMP:
+                out.write(f'   ;; -- dump --\n')
                 out.write('   pop x0\n')
-                out.write('   bl pop\n')
+                out.write('   bl dump\n')
 
         out.write('   mov x0, #0\n')
         out.write('   mov x16, #1\n')
@@ -157,10 +160,6 @@ def usage(prg: str) -> None:
 def call_cmd(cmd: List[str]) -> None:
     print(cmd)
     subprocess.call(cmd)
-
-
-def unpack(arr: List) -> Tuple:
-    return arr[0], arr[1:]
 
 
 # Find the end of the token value
@@ -199,8 +198,8 @@ def convert_to_op(token: Token) -> Tuple:
         return add()
     elif token.value == '-':
         return sub()
-    elif token.value == 'pop':
-        return pop()
+    elif token.value == 'dump':
+        return dump()
     else:
         try:
             return push(int(token.value))
@@ -215,21 +214,21 @@ def load_program(path: str) -> List:
 
 if __name__ == '__main__':
     argv = sys.argv
-    (program_name, argv) = unpack(argv)
+    program_name, *argv = argv
 
     if len(argv) < 1:
         usage(program_name)
         print("ERROR: no subcommand is provided")
         exit(1)
 
-    (subcommand, argv) = unpack(argv)
+    subcommand, *argv = argv
 
     if subcommand == 'sim':
         if len(argv) < 1:
             usage(program_name)
             print("ERROR: no file is provided for simulation")
             exit(1)
-        (program_path, argv) = unpack(argv)
+        program_path, *argv = argv
         program = load_program(program_path)
         simulate_program(program)
     elif subcommand == 'com':
@@ -237,7 +236,7 @@ if __name__ == '__main__':
             usage(program_name)
             print("ERROR: no file is provided for compilation")
             exit(1)
-        (program_path, argv) = unpack(argv)
+        program_path, *argv = argv
         program = load_program(program_path)
         compile_program(program, 'output.s')
         call_cmd(['as', '-o', 'output.o', 'output.s'])
