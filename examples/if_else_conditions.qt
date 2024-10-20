@@ -1,0 +1,12 @@
+# Compare if 1 is less or equal than 10, if yes check whether 1 is equal to 2, if yes dump 1, if no dump 2, if no dump 3
+1 10 <=
+if
+    1 2 =
+    if
+        1 dump
+    else
+        2 dump
+    end
+else
+    3 dump
+end

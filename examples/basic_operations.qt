@@ -1,17 +1,8 @@
-11000 117 + 11117 = if
-1 dump
-1 2 = if
-2 dump
-1 1 = if
-3 dump
-else
-4 dump
-end
-else
-5 dump
-end
-6 dump
-else
-7 dump
-end
-120 3 - dump
+# Push 11000, push 117, add 117 to 11000 and dump result
+11000 117 + dump
+
+# Push 120, push 3, subtract 3 from 120, clone the result and dump result 2 times
+120 3 - clone dump dump
+
+# Push 4, push 5, compare if 4 is greater or equal than 5, push 1 if true (0 if false) and dump result
+4 5 >= 5

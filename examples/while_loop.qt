@@ -1,0 +1,6 @@
+# Push 1, check if it is less or equal to 10, if yes clone, dump, increment by 1 and check again
+1
+while clone 10 <= do
+    clone dump
+    1 +
+end

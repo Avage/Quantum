@@ -32,47 +32,22 @@ OP_PUSH = enum(True)
 OP_ADD = enum()
 OP_SUB = enum()
 OP_DUMP = enum()
+OP_CLONE = enum()
 OP_EQ = enum()
+OP_GT = enum()
+OP_GE = enum()
+OP_LT = enum()
+OP_LE = enum()
 OP_IF = enum()
 OP_ELSE = enum()
 OP_END = enum()
+OP_WHILE = enum()
+OP_DO = enum()
 COUNT_OPS = enum()
 
 
-def op_push(x: int) -> Tuple:
-    return OP_PUSH, x
-
-
-def op_add() -> Tuple:
-    return (OP_ADD,)
-
-
-def op_sub() -> Tuple:
-    return (OP_SUB,)
-
-
-def op_dump() -> Tuple:
-    return (OP_DUMP,)
-
-
-def op_eq() -> Tuple:
-    return (OP_EQ,)
-
-
-def op_if() -> Tuple:
-    return (OP_IF,)
-
-
-def op_else() -> Tuple:
-    return (OP_ELSE,)
-
-
-def op_end() -> Tuple:
-    return (OP_END,)
-
-
 def simulate_program(prg: List[Tuple]) -> None:
-    assert COUNT_OPS == 8, 'Exhaustive handling of operands in simulate_program'
+    assert COUNT_OPS == 15, 'Exhaustive handling of operands in `simulate_program`'
     stack = []
     op_index = 0
     while op_index < len(prg):
@@ -94,23 +69,58 @@ def simulate_program(prg: List[Tuple]) -> None:
             a = stack.pop()
             print(a)
             op_index += 1
+        elif op[0] == OP_CLONE:
+            a = stack.pop()
+            stack.append(a)
+            stack.append(a)
+            op_index += 1
         elif op[0] == OP_EQ:
             a = stack.pop()
             b = stack.pop()
             stack.append(int(a == b))
             op_index += 1
+        elif op[0] == OP_GT:
+            a = stack.pop()
+            b = stack.pop()
+            stack.append(int(b > a))
+            op_index += 1
+        elif op[0] == OP_GE:
+            a = stack.pop()
+            b = stack.pop()
+            stack.append(int(b >= a))
+            op_index += 1
+        elif op[0] == OP_LT:
+            a = stack.pop()
+            b = stack.pop()
+            stack.append(int(b < a))
+            op_index += 1
+        elif op[0] == OP_LE:
+            a = stack.pop()
+            b = stack.pop()
+            stack.append(int(b <= a))
+            op_index += 1
         elif op[0] == OP_IF:
-            assert len(op) >= 2, "END of the IF block is not referenced"
+            assert len(op) >= 2, "`end` is not referenced in `if` block"
             a = stack.pop()
             if a == 0:
                 op_index = op[1]
             else:
                 op_index += 1
         elif op[0] == OP_ELSE:
-            assert len(op) >= 2, "END of the ELSE block is not referenced"
+            assert len(op) >= 2, "`end` is not referenced in `else` block"
             op_index = op[1]
-        elif op[0] == OP_END:
+        elif op[0] == OP_WHILE:
             op_index += 1
+        elif op[0] == OP_DO:
+            assert len(op) >= 2, "`end` is not referenced in `while-do` block"
+            a = stack.pop()
+            if a == 0:
+                op_index = op[1]
+            else:
+                op_index += 1
+        elif op[0] == OP_END:
+            assert len(op) >= 2, "`end` doesn't have reference to the next instruction to jump"
+            op_index = op[1]
         else:
             assert False, f'Unhandled instruction'
 
@@ -167,9 +177,10 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
         setup_macros_and_functions(out)
 
         out.write('_main:\n')
-        assert COUNT_OPS == 8, 'Exhaustive handling of operands in compile_program'
+        assert COUNT_OPS == 15, 'Exhaustive handling of operands in `compile_program`'
         for op_index in range(len(prg)):
             op = prg[op_index]
+            out.write(f'label_{op_index}:\n')
             if op[0] == OP_PUSH:
                 # Pushes the value to the stack
                 out.write(f'   ;; -- push {op[1]} --\n')
@@ -194,33 +205,78 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
                 out.write('   ;; -- dump --\n')
                 out.write('   pop x0\n')
                 out.write('   bl dump\n')
+            elif op[0] == OP_CLONE:
+                # Pops the value at the top of the stack and pushes it back 2 times
+                out.write('   ;; -- clone --\n')
+                out.write('   pop x0\n')
+                out.write('   push x0\n')
+                out.write('   push x0\n')
             elif op[0] == OP_EQ:
-                # Compares the top two values on the stack and pushes the result
+                # Pops the top two values on the stack and pushes the result of the EQ comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
                 out.write('   pop x1\n')
                 out.write('   cmp x0, x1\n')
                 out.write('   cset x0, eq\n')
                 out.write('   push x0\n')
+            elif op[0] == OP_GT:
+                # Pops the top two values on the stack and pushes the result of the GT comparison
+                out.write('   ;; -- eq --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   cmp x1, x0\n')
+                out.write('   cset x0, gt\n')
+                out.write('   push x0\n')
+            elif op[0] == OP_GE:
+                # Pops the top two values on the stack and pushes the result of the GE comparison
+                out.write('   ;; -- eq --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   cmp x1, x0\n')
+                out.write('   cset x0, ge\n')
+                out.write('   push x0\n')
+            elif op[0] == OP_LT:
+                # Pops the top two values on the stack and pushes the result of the LT comparison
+                out.write('   ;; -- eq --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   cmp x1, x0\n')
+                out.write('   cset x0, lt\n')
+                out.write('   push x0\n')
+            elif op[0] == OP_LE:
+                # Pops the top two values on the stack and pushes the result of the LE comparison
+                out.write('   ;; -- eq --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   cmp x1, x0\n')
+                out.write('   cset x0, le\n')
+                out.write('   push x0\n')
             elif op[0] == OP_IF:
                 # Pops the top value on the stack and jumps to the END of the IF block if it is 0
-                assert len(op) >= 2, "END of the IF block is not referenced"
+                assert len(op) >= 2, "`end` is not referenced in `if` block"
                 out.write('   ;; -- if --\n')
                 out.write('   pop x0\n')
                 out.write(f'   cbz x0, label_{op[1]}\n')
             elif op[0] == OP_ELSE:
                 # Jumps in case IF block was executed, marks the start of the ELSE block
-                assert len(op) >= 2, "END of the ELSE block is not referenced"
+                assert len(op) >= 2, "`end` is not referenced in `else` block"
                 out.write(f'   b label_{op[1]}\n')
                 out.write('   ;; -- else --\n')
-                out.write(f'label_{op_index + 1}:\n')
+            elif op[0] == OP_WHILE:
+                out.write('   ;; -- while --\n')
+            elif op[0] == OP_DO:
+                assert len(op) >= 2, "`end` is not referenced in `while-do` block"
+                out.write('   ;; -- do --\n')
+                out.write('   pop x0\n')
+                out.write(f'   cbz x0, label_{op[1]}\n')
             elif op[0] == OP_END:
                 # Marks the end of an IF or ELSE block
+                assert len(op) >= 2, "`end` doesn't have reference to the next instruction to jump"
                 out.write('   ;; -- end --\n')
-                out.write(f'label_{op_index}:\n')
+                out.write(f'   b label_{op[1]}\n')
             else:
                 assert False, 'Unhandled instruction'
-
+        out.write(f'label_{op_index + 1}:\n')
         out.write('   mov x0, #0\n')
         out.write('   mov x16, #1\n')
         out.write('   svc #0\n')
@@ -252,6 +308,9 @@ def lex_line(line: str) -> Tuple[int, str]:
     while col_start < len(line):
         if line[col_start].isspace():
             col_start += 1
+        # Skip comments
+        elif line[col_start] == '#':
+            break
         else:
             end = col_start + value_end(line[col_start:]) + 1
             yield col_start, line[col_start: end]
@@ -269,47 +328,74 @@ def lex_file(file_path: str) -> List[Token]:
 
 def construct_blocks(prg: List[Tuple]) -> List[Tuple]:
     stack = []
-    assert COUNT_OPS == 8, ('Exhaustive handling of operands in construct_blocks. Note, not all operations need to be '
-                            'implemented here. Only those that form blocks')
+    assert COUNT_OPS == 15, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
+                             'be implemented here. Only those that form blocks')
     for op_index in range(len(prg)):
         op = prg[op_index]
         if op[0] == OP_IF:
             stack.append(op_index)
         elif op[0] == OP_ELSE:
-            assert stack, 'ELSE can be used only with with IF blocks'
+            assert stack, '`else` can be used only with with `if` blocks'
             block_start = stack.pop()
-            assert prg[block_start][0] == OP_IF, 'ELSE can be used only with with IF blocks'
+            assert prg[block_start][0] == OP_IF, '`else` can be used only with with `if` blocks'
             prg[block_start] += (op_index + 1,)
             stack.append(op_index)
+        elif op[0] == OP_WHILE:
+            stack.append(op_index)
+        elif op[0] == OP_DO:
+            block_while = stack.pop()
+            prg[op_index] += (block_while,)
+            stack.append(op_index)
         elif op[0] == OP_END:
-            assert stack, 'END can be used only with with IF or ELSE blocks'
+            assert stack, 'Unnecessary `end` operation'
             block_start = stack.pop()
-            assert prg[block_start][0] == OP_IF or prg[block_start][0] == OP_ELSE, (
-                'END can be used only with with IF or ELSE blocks')
-            prg[block_start] += (op_index,)
+            if prg[block_start][0] in [OP_IF, OP_ELSE]:
+                prg[block_start] += (op_index,)
+                prg[op_index] += (op_index + 1,)
+            elif prg[block_start][0] == OP_DO:
+                assert len(prg[block_start]) >= 2, '`while` is not referenced in `do` block'
+                prg[op_index] += (prg[block_start][1],)
+                prg[block_start] = prg[block_start][:-1]
+                prg[block_start] += (op_index + 1,)
+            else:
+                assert False, '`end` can be used only with with `if`, `else`, `while-do` blocks'
     return prg
 
 
 def convert_to_op(token: Token) -> Tuple:
-    assert COUNT_OPS == 8, 'Exhaustive handling of operands in convert_to_op'
+    assert COUNT_OPS == 15, 'Exhaustive handling of operands in `convert_to_op`'
 
     if token.value == '+':
-        return op_add()
+        return (OP_ADD,)
     elif token.value == '-':
-        return op_sub()
+        return (OP_SUB,)
     elif token.value == 'dump':
-        return op_dump()
+        return (OP_DUMP,)
+    elif token.value == 'clone':
+        return (OP_CLONE,)
     elif token.value == '=':
-        return op_eq()
+        return (OP_EQ,)
+    elif token.value == '>':
+        return (OP_GT,)
+    elif token.value == '>=':
+        return (OP_GE,)
+    elif token.value == '<':
+        return (OP_LT,)
+    elif token.value == '<=':
+        return (OP_LE,)
     elif token.value == 'if':
-        return op_if()
+        return (OP_IF,)
     elif token.value == 'else':
-        return op_else()
+        return (OP_ELSE,)
     elif token.value == 'end':
-        return op_end()
+        return (OP_END,)
+    elif token.value == 'while':
+        return (OP_WHILE,)
+    elif token.value == 'do':
+        return (OP_DO,)
     else:
         try:
-            return op_push(int(token.value))
+            return OP_PUSH, int(token.value)
         except ValueError as err:
             print(f"{token}: {err}")
             exit(1)

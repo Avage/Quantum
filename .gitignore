@@ -4,6 +4,4 @@
 output
 output.o
 output.s
-test
-test.o
-test.s
+/examples/test.qt
