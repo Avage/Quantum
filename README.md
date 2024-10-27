@@ -80,10 +80,10 @@ process, otherwise stops
 
 [//]: # (Syscall1, syscall3)
 <h3 style="color: #ffa7d7;">Syscalls</h3>
-`<arg1> <arg2> syscall1` - Calls syscall1 with top two values of stack. `<arg1>` is syscall argument, `<arg2>` is 
+`<arg1> <arg2> syscall1` - Makes syscall with top two values of stack. `<arg1>` is syscall argument, `<arg2>` is 
 syscall number
 
-`<arg1> <arg2> <arg3> <arg4> syscall3` - Calls syscall3 with top three values of stack. `<arg1>`, `<arg2>`, `<arg3>` 
+`<arg1> <arg2> <arg3> <arg4> syscall3` - Makes syscall with top three values of stack. `<arg1>`, `<arg2>`, `<arg3>` 
 are syscall arguments, `<arg4>` is syscall number
 
 [//]: # (Syscall1, syscall3)
