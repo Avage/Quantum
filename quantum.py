@@ -5,19 +5,6 @@ from typing import TextIO, Tuple, List
 iota_counter = 0
 
 
-class Token:
-    """ Token class to represent a token in the program, with the file path, row, column, and value """
-
-    def __init__(self, file_path: str, row: int, col: int, value: str):
-        self.file_path = file_path
-        self.row = row
-        self.col = col
-        self.value = value
-
-    def __str__(self):
-        return f"{self.file_path}:{self.row}:{self.col}"
-
-
 def enum(reset=False) -> int:
     """ Iota function to generate unique integer values """
     global iota_counter
@@ -27,6 +14,8 @@ def enum(reset=False) -> int:
     iota_counter += 1
     return result
 
+
+MEMORY_ALLOCATION = 640_000
 
 OP_PUSH = enum(True)
 OP_ADD = enum()
@@ -43,86 +32,129 @@ OP_ELSE = enum()
 OP_END = enum()
 OP_WHILE = enum()
 OP_DO = enum()
+OP_MEM = enum()
+OP_LOAD = enum()
+OP_SAVE = enum()
 COUNT_OPS = enum()
 
 
-def simulate_program(prg: List[Tuple]) -> None:
-    assert COUNT_OPS == 15, 'Exhaustive handling of operands in `simulate_program`'
+class Token:
+    """ Token class to represent a token in the program, with the file path, row, column, and value """
+
+    def __init__(self, file_path: str, row: int, col: int, value: str):
+        self.file_path = file_path
+        self.row = row
+        self.col = col
+        self.value = value
+
+    def __str__(self):
+        return f"{self.file_path}:{self.row}:{self.col}"
+
+    def get_location(self) -> Tuple[str, int, int]:
+        return self.file_path, self.row, self.col
+
+
+class Operation:
+    """ Operation class to represent an operation in the program """
+
+    def __init__(self, op_type: int, loc: Tuple[str, int, int], value: int = None, jump: int = None):
+        self.type = op_type
+        self.loc = loc
+        self.value = value
+        self.jump = jump
+
+
+def simulate_program(prg: List[Operation]) -> None:
+    assert COUNT_OPS == 18, 'Exhaustive handling of operands in `simulate_program`'
     stack = []
+    memory = bytearray(MEMORY_ALLOCATION)
     op_index = 0
     while op_index < len(prg):
         op = prg[op_index]
-        if op[0] == OP_PUSH:
-            stack.append(op[1])
+        if op.type == OP_PUSH:
+            stack.append(op.value)
             op_index += 1
-        elif op[0] == OP_ADD:
+        elif op.type == OP_ADD:
             a = stack.pop()
             b = stack.pop()
             stack.append(a + b)
             op_index += 1
-        elif op[0] == OP_SUB:
+        elif op.type == OP_SUB:
             a = stack.pop()
             b = stack.pop()
             stack.append(b - a)
             op_index += 1
-        elif op[0] == OP_DUMP:
+        elif op.type == OP_DUMP:
             a = stack.pop()
             print(a)
             op_index += 1
-        elif op[0] == OP_CLONE:
+        elif op.type == OP_CLONE:
             a = stack.pop()
             stack.append(a)
             stack.append(a)
             op_index += 1
-        elif op[0] == OP_EQ:
+        elif op.type == OP_EQ:
             a = stack.pop()
             b = stack.pop()
             stack.append(int(a == b))
             op_index += 1
-        elif op[0] == OP_GT:
+        elif op.type == OP_GT:
             a = stack.pop()
             b = stack.pop()
             stack.append(int(b > a))
             op_index += 1
-        elif op[0] == OP_GE:
+        elif op.type == OP_GE:
             a = stack.pop()
             b = stack.pop()
             stack.append(int(b >= a))
             op_index += 1
-        elif op[0] == OP_LT:
+        elif op.type == OP_LT:
             a = stack.pop()
             b = stack.pop()
             stack.append(int(b < a))
             op_index += 1
-        elif op[0] == OP_LE:
+        elif op.type == OP_LE:
             a = stack.pop()
             b = stack.pop()
             stack.append(int(b <= a))
             op_index += 1
-        elif op[0] == OP_IF:
-            assert len(op) >= 2, "`end` is not referenced in `if` block"
+        elif op.type == OP_IF:
+            assert op.jump is not None, "`end` is not referenced in `if` block"
             a = stack.pop()
             if a == 0:
-                op_index = op[1]
+                op_index = op.jump
             else:
                 op_index += 1
-        elif op[0] == OP_ELSE:
-            assert len(op) >= 2, "`end` is not referenced in `else` block"
-            op_index = op[1]
-        elif op[0] == OP_WHILE:
+        elif op.type == OP_ELSE:
+            assert op.jump is not None, "`end` is not referenced in `else` block"
+            op_index = op.jump
+        elif op.type == OP_WHILE:
             op_index += 1
-        elif op[0] == OP_DO:
-            assert len(op) >= 2, "`end` is not referenced in `while-do` block"
+        elif op.type == OP_DO:
+            assert op.jump is not None, "`end` is not referenced in `while-do` block"
             a = stack.pop()
             if a == 0:
-                op_index = op[1]
+                op_index = op.jump
             else:
                 op_index += 1
-        elif op[0] == OP_END:
-            assert len(op) >= 2, "`end` doesn't have reference to the next instruction to jump"
-            op_index = op[1]
+        elif op.type == OP_END:
+            assert op.jump is not None, "`end` doesn't have reference to the next instruction to jump"
+            op_index = op.jump
+        elif op.type == OP_MEM:
+            stack.append(0)
+            op_index += 1
+        elif op.type == OP_LOAD:
+            a = stack.pop()
+            stack.append(memory[a])
+            op_index += 1
+        elif op.type == OP_SAVE:
+            a = stack.pop()
+            b = stack.pop()
+            memory[b] = a & 0xFF
+            op_index += 1
         else:
             assert False, f'Unhandled instruction'
+    print(memory[:10])
 
 
 def setup_macros_and_functions(out: TextIO) -> None:
@@ -169,49 +201,50 @@ def setup_macros_and_functions(out: TextIO) -> None:
     out.write('   ret\n')
 
 
-def compile_program(prg: List[Tuple], file_path: str) -> None:
+def compile_program(prg: List[Operation], file_path: str) -> None:
     with open(file_path, 'w') as out:
         out.write('.global _main\n')
         out.write('.align 2\n')
 
+        # Setup macros
         setup_macros_and_functions(out)
 
         out.write('_main:\n')
-        assert COUNT_OPS == 15, 'Exhaustive handling of operands in `compile_program`'
+        assert COUNT_OPS == 18, 'Exhaustive handling of operands in `compile_program`'
         for op_index in range(len(prg)):
             op = prg[op_index]
             out.write(f'label_{op_index}:\n')
-            if op[0] == OP_PUSH:
+            if op.type == OP_PUSH:
                 # Pushes the value to the stack
-                out.write(f'   ;; -- push {op[1]} --\n')
-                out.write(f'   mov x0, #{op[1]}\n')
+                out.write(f'   ;; -- push {op.value} --\n')
+                out.write(f'   mov x0, #{op.value}\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_ADD:
+            elif op.type == OP_ADD:
                 # Pops the top two values on the stack and pushes the result
                 out.write('   ;; -- add --\n')
                 out.write('   pop x0\n')
                 out.write('   pop x1\n')
                 out.write('   add x0, x0, x1\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_SUB:
+            elif op.type == OP_SUB:
                 # Subtracts the top value from the second value on the stack and pushes the result
                 out.write('   ;; -- sub --\n')
                 out.write('   pop x0\n')
                 out.write('   pop x1\n')
                 out.write('   sub x0, x1, x0\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_DUMP:
+            elif op.type == OP_DUMP:
                 # Pops and prints the value at the top of the stack
                 out.write('   ;; -- dump --\n')
                 out.write('   pop x0\n')
                 out.write('   bl dump\n')
-            elif op[0] == OP_CLONE:
+            elif op.type == OP_CLONE:
                 # Pops the value at the top of the stack and pushes it back 2 times
                 out.write('   ;; -- clone --\n')
                 out.write('   pop x0\n')
                 out.write('   push x0\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_EQ:
+            elif op.type == OP_EQ:
                 # Pops the top two values on the stack and pushes the result of the EQ comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
@@ -219,7 +252,7 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
                 out.write('   cmp x0, x1\n')
                 out.write('   cset x0, eq\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_GT:
+            elif op.type == OP_GT:
                 # Pops the top two values on the stack and pushes the result of the GT comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
@@ -227,7 +260,7 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
                 out.write('   cmp x1, x0\n')
                 out.write('   cset x0, gt\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_GE:
+            elif op.type == OP_GE:
                 # Pops the top two values on the stack and pushes the result of the GE comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
@@ -235,7 +268,7 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
                 out.write('   cmp x1, x0\n')
                 out.write('   cset x0, ge\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_LT:
+            elif op.type == OP_LT:
                 # Pops the top two values on the stack and pushes the result of the LT comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
@@ -243,7 +276,7 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
                 out.write('   cmp x1, x0\n')
                 out.write('   cset x0, lt\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_LE:
+            elif op.type == OP_LE:
                 # Pops the top two values on the stack and pushes the result of the LE comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
@@ -251,29 +284,49 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
                 out.write('   cmp x1, x0\n')
                 out.write('   cset x0, le\n')
                 out.write('   push x0\n')
-            elif op[0] == OP_IF:
+            elif op.type == OP_IF:
                 # Pops the top value on the stack and jumps to the END of the IF block if it is 0
-                assert len(op) >= 2, "`end` is not referenced in `if` block"
+                assert op.jump is not None, "`end` is not referenced in `if` block"
                 out.write('   ;; -- if --\n')
                 out.write('   pop x0\n')
-                out.write(f'   cbz x0, label_{op[1]}\n')
-            elif op[0] == OP_ELSE:
+                out.write(f'   cbz x0, label_{op.jump}\n')
+            elif op.type == OP_ELSE:
                 # Jumps in case IF block was executed, marks the start of the ELSE block
-                assert len(op) >= 2, "`end` is not referenced in `else` block"
-                out.write(f'   b label_{op[1]}\n')
+                assert op.jump is not None, "`end` is not referenced in `else` block"
+                out.write(f'   b label_{op.jump}\n')
                 out.write('   ;; -- else --\n')
-            elif op[0] == OP_WHILE:
+            elif op.type == OP_WHILE:
+                # Marks the start of the WHILE block
                 out.write('   ;; -- while --\n')
-            elif op[0] == OP_DO:
-                assert len(op) >= 2, "`end` is not referenced in `while-do` block"
+            elif op.type == OP_DO:
+                # Pops the top value on the stack and jumps to the END of the WHILE block if it is 0
+                assert op.jump is not None, "`end` is not referenced in `while-do` block"
                 out.write('   ;; -- do --\n')
                 out.write('   pop x0\n')
-                out.write(f'   cbz x0, label_{op[1]}\n')
-            elif op[0] == OP_END:
+                out.write(f'   cbz x0, label_{op.jump}\n')
+            elif op.type == OP_END:
                 # Marks the end of an IF or ELSE block
-                assert len(op) >= 2, "`end` doesn't have reference to the next instruction to jump"
+                assert op.jump is not None, "`end` doesn't have reference to the next instruction to jump"
                 out.write('   ;; -- end --\n')
-                out.write(f'   b label_{op[1]}\n')
+                out.write(f'   b label_{op.jump}\n')
+            elif op.type == OP_MEM:
+                # Pushes the memory address to the stack
+                out.write('   ;; -- mem --\n')
+                out.write('   adrp x0, mem@PAGE\n')
+                out.write('   add x0, x0, mem@PAGEOFF\n')
+                out.write('   push x0\n')
+            elif op.type == OP_LOAD:
+                # Pops the top value on the stack and pushes the value at that memory address
+                out.write('   ;; -- load --\n')
+                out.write('   pop x0\n')
+                out.write('   ldrb w1, [x0]\n')
+                out.write('   push w1\n')
+            elif op.type == OP_SAVE:
+                # Pops the top two values on the stack and saves the top value to the memory address of the second value
+                out.write('   ;; -- save --\n')
+                out.write('   pop w0\n')
+                out.write('   pop x1\n')
+                out.write('   strb w0, [x1]\n')
             else:
                 assert False, 'Unhandled instruction'
         out.write(f'label_{op_index + 1}:\n')
@@ -281,17 +334,9 @@ def compile_program(prg: List[Tuple], file_path: str) -> None:
         out.write('   mov x16, #1\n')
         out.write('   svc #0\n')
 
-
-def usage(prg: str) -> None:
-    print(f"Usage: {prg} <SUBCOMMAND> [ARGS]")
-    print("SUBCOMMANDS:")
-    print("   sim <file>     Simulate the program")
-    print("   com <file>     Compile the program")
-
-
-def call_cmd(cmd: List[str]) -> None:
-    print(cmd)
-    subprocess.call(cmd)
+        # Allocate memory
+        out.write('.section __DATA, __BSS\n')
+        out.write(f'mem: .skip {MEMORY_ALLOCATION}\n')
 
 
 # Find the end of the token value
@@ -308,9 +353,6 @@ def lex_line(line: str) -> Tuple[int, str]:
     while col_start < len(line):
         if line[col_start].isspace():
             col_start += 1
-        # Skip comments
-        elif line[col_start] == '#':
-            break
         else:
             end = col_start + value_end(line[col_start:]) + 1
             yield col_start, line[col_start: end]
@@ -322,80 +364,85 @@ def lex_file(file_path: str) -> List[Token]:
     with open(file_path, 'r') as f:
         return [Token(file_path, row, col, word)
                 for (row, line) in enumerate(f.readlines())
-                for (col, word) in lex_line(line)
+                for (col, word) in lex_line(line.split("#")[0])  # Skip comments
                 ]
 
 
-def construct_blocks(prg: List[Tuple]) -> List[Tuple]:
+def construct_blocks(prg: List[Operation]) -> List[Operation]:
     stack = []
-    assert COUNT_OPS == 15, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
+    assert COUNT_OPS == 18, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
                              'be implemented here. Only those that form blocks')
     for op_index in range(len(prg)):
         op = prg[op_index]
-        if op[0] == OP_IF:
+        if op.type == OP_IF:
             stack.append(op_index)
-        elif op[0] == OP_ELSE:
+        elif op.type == OP_ELSE:
             assert stack, '`else` can be used only with with `if` blocks'
             block_start = stack.pop()
-            assert prg[block_start][0] == OP_IF, '`else` can be used only with with `if` blocks'
-            prg[block_start] += (op_index + 1,)
+            assert prg[block_start].type == OP_IF, '`else` can be used only with with `if` blocks'
+            prg[block_start].jump = op_index + 1
             stack.append(op_index)
-        elif op[0] == OP_WHILE:
+        elif op.type == OP_WHILE:
             stack.append(op_index)
-        elif op[0] == OP_DO:
+        elif op.type == OP_DO:
             block_while = stack.pop()
-            prg[op_index] += (block_while,)
+            prg[op_index].jump = block_while
             stack.append(op_index)
-        elif op[0] == OP_END:
+        elif op.type == OP_END:
             assert stack, 'Unnecessary `end` operation'
             block_start = stack.pop()
-            if prg[block_start][0] in [OP_IF, OP_ELSE]:
-                prg[block_start] += (op_index,)
-                prg[op_index] += (op_index + 1,)
-            elif prg[block_start][0] == OP_DO:
-                assert len(prg[block_start]) >= 2, '`while` is not referenced in `do` block'
-                prg[op_index] += (prg[block_start][1],)
-                prg[block_start] = prg[block_start][:-1]
-                prg[block_start] += (op_index + 1,)
+            if prg[block_start].type in [OP_IF, OP_ELSE]:
+                prg[block_start].jump = op_index
+                prg[op_index].jump = op_index + 1
+            elif prg[block_start].type == OP_DO:
+                assert prg[block_start].jump is not None, '`while` is not referenced in `do` block'
+                prg[op_index].jump = prg[block_start].jump
+                prg[block_start].jump = op_index + 1
             else:
                 assert False, '`end` can be used only with with `if`, `else`, `while-do` blocks'
     return prg
 
 
-def convert_to_op(token: Token) -> Tuple:
-    assert COUNT_OPS == 15, 'Exhaustive handling of operands in `convert_to_op`'
+def convert_to_op(token: Token) -> Operation:
+    assert COUNT_OPS == 18, 'Exhaustive handling of operands in `convert_to_op`'
 
     if token.value == '+':
-        return (OP_ADD,)
+        return Operation(OP_ADD, token.get_location())
     elif token.value == '-':
-        return (OP_SUB,)
+        return Operation(OP_SUB, token.get_location())
     elif token.value == 'dump':
-        return (OP_DUMP,)
+        return Operation(OP_DUMP, token.get_location())
     elif token.value == 'clone':
-        return (OP_CLONE,)
+        return Operation(OP_CLONE, token.get_location())
     elif token.value == '=':
-        return (OP_EQ,)
+        return Operation(OP_EQ, token.get_location())
     elif token.value == '>':
-        return (OP_GT,)
+        return Operation(OP_GT, token.get_location())
     elif token.value == '>=':
-        return (OP_GE,)
+        return Operation(OP_GE, token.get_location())
     elif token.value == '<':
-        return (OP_LT,)
+        return Operation(OP_LT, token.get_location())
     elif token.value == '<=':
-        return (OP_LE,)
+        return Operation(OP_LE, token.get_location())
     elif token.value == 'if':
-        return (OP_IF,)
+        return Operation(OP_IF, token.get_location())
     elif token.value == 'else':
-        return (OP_ELSE,)
+        return Operation(OP_ELSE, token.get_location())
     elif token.value == 'end':
-        return (OP_END,)
+        return Operation(OP_END, token.get_location())
     elif token.value == 'while':
-        return (OP_WHILE,)
+        return Operation(OP_WHILE, token.get_location())
     elif token.value == 'do':
-        return (OP_DO,)
+        return Operation(OP_DO, token.get_location())
+    elif token.value == 'mem':
+        return Operation(OP_MEM, token.get_location())
+    elif token.value == 'load':
+        return Operation(OP_LOAD, token.get_location())
+    elif token.value == 'save':
+        return Operation(OP_SAVE, token.get_location())
     else:
         try:
-            return OP_PUSH, int(token.value)
+            return Operation(OP_PUSH, token.get_location(), value=int(token.value))
         except ValueError as err:
             print(f"{token}: {err}")
             exit(1)
@@ -403,6 +450,18 @@ def convert_to_op(token: Token) -> Tuple:
 
 def load_program(path: str) -> List:
     return construct_blocks([convert_to_op(token) for token in lex_file(path)])
+
+
+def usage(prg: str) -> None:
+    print(f"Usage: {prg} <SUBCOMMAND> [ARGS]")
+    print("SUBCOMMANDS:")
+    print("   sim <file>     Simulate the program")
+    print("   com <file>     Compile the program")
+
+
+def call_cmd(cmd: List[str]) -> None:
+    print(cmd)
+    subprocess.call(cmd)
 
 
 if __name__ == '__main__':
@@ -425,15 +484,21 @@ if __name__ == '__main__':
         program = load_program(program_path)
         simulate_program(program)
     elif subcommand == 'com':
+        options = ''
         if len(argv) < 1:
             usage(program_name)
             print("ERROR: no file is provided for compilation")
             exit(1)
-        program_path, *argv = argv
+        elif len(argv) > 1:
+            options, program_path, *argv = argv
+        else:
+            program_path, *argv = argv
         program = load_program(program_path)
         compile_program(program, 'output.s')
         call_cmd(['as', '-o', 'output.o', 'output.s'])
         call_cmd(['ld', '-o', 'output', 'output.o'])
+        if options == '-r':
+            call_cmd(['./output'])
     else:
         usage(program_name)
         print(f"ERROR: unknown subcommand {subcommand}")
