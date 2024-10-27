@@ -35,6 +35,8 @@ OP_DO = enum()
 OP_MEM = enum()
 OP_LOAD = enum()
 OP_SAVE = enum()
+OP_SYSCALL1 = enum()
+OP_SYSCALL3 = enum()
 COUNT_OPS = enum()
 
 
@@ -65,7 +67,7 @@ class Operation:
 
 
 def simulate_program(prg: List[Operation]) -> None:
-    assert COUNT_OPS == 18, 'Exhaustive handling of operands in `simulate_program`'
+    assert COUNT_OPS == 20, 'Exhaustive handling of operands in `simulate_program`'
     stack = []
     memory = bytearray(MEMORY_ALLOCATION)
     op_index = 0
@@ -75,53 +77,53 @@ def simulate_program(prg: List[Operation]) -> None:
             stack.append(op.value)
             op_index += 1
         elif op.type == OP_ADD:
-            a = stack.pop()
-            b = stack.pop()
-            stack.append(a + b)
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_1 + val_2)
             op_index += 1
         elif op.type == OP_SUB:
-            a = stack.pop()
-            b = stack.pop()
-            stack.append(b - a)
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_1 - val_2)
             op_index += 1
         elif op.type == OP_DUMP:
-            a = stack.pop()
-            print(a)
+            val_1 = stack.pop()
+            print(val_1)
             op_index += 1
         elif op.type == OP_CLONE:
-            a = stack.pop()
-            stack.append(a)
-            stack.append(a)
+            val_1 = stack.pop()
+            stack.append(val_1)
+            stack.append(val_1)
             op_index += 1
         elif op.type == OP_EQ:
-            a = stack.pop()
-            b = stack.pop()
-            stack.append(int(a == b))
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(int(val_1 == val_2))
             op_index += 1
         elif op.type == OP_GT:
-            a = stack.pop()
-            b = stack.pop()
-            stack.append(int(b > a))
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(int(val_1 > val_2))
             op_index += 1
         elif op.type == OP_GE:
-            a = stack.pop()
-            b = stack.pop()
-            stack.append(int(b >= a))
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(int(val_1 >= val_2))
             op_index += 1
         elif op.type == OP_LT:
-            a = stack.pop()
-            b = stack.pop()
-            stack.append(int(b < a))
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(int(val_1 < val_2))
             op_index += 1
         elif op.type == OP_LE:
-            a = stack.pop()
-            b = stack.pop()
-            stack.append(int(b <= a))
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(int(val_1 <= val_2))
             op_index += 1
         elif op.type == OP_IF:
             assert op.jump is not None, "`end` is not referenced in `if` block"
-            a = stack.pop()
-            if a == 0:
+            val_1 = stack.pop()
+            if val_1 == 0:
                 op_index = op.jump
             else:
                 op_index += 1
@@ -132,8 +134,8 @@ def simulate_program(prg: List[Operation]) -> None:
             op_index += 1
         elif op.type == OP_DO:
             assert op.jump is not None, "`end` is not referenced in `while-do` block"
-            a = stack.pop()
-            if a == 0:
+            val_1 = stack.pop()
+            if val_1 == 0:
                 op_index = op.jump
             else:
                 op_index += 1
@@ -144,17 +146,41 @@ def simulate_program(prg: List[Operation]) -> None:
             stack.append(0)
             op_index += 1
         elif op.type == OP_LOAD:
-            a = stack.pop()
-            stack.append(memory[a])
+            val_1 = stack.pop()
+            stack.append(memory[val_1])
             op_index += 1
         elif op.type == OP_SAVE:
-            a = stack.pop()
-            b = stack.pop()
-            memory[b] = a & 0xFF
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            memory[val_1] = val_2 & 0xFF
+            op_index += 1
+        elif op.type == OP_SYSCALL1:
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            # 1 is exit syscall
+            if val_2 == 1:
+                exit(val_1)
+            else:
+                assert False, f'Unhandled syscall: {val_2}'
+        elif op.type == OP_SYSCALL3:
+            val_4 = stack.pop()
+            val_3 = stack.pop()
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            # 4 is write syscall
+            if val_4 == 4:
+                s = memory[val_2: val_2 + val_3].decode('utf-8')
+                if val_1 == 1:
+                    print(s, end='')
+                elif val_1 == 2:
+                    print(s, end='', file=sys.stderr)
+                else:
+                    assert False, f'Unknown file description: {val_1}'
+            else:
+                assert False, f'Unhandled syscall: {val_4}'
             op_index += 1
         else:
-            assert False, f'Unhandled instruction'
-    print(memory[:10])
+            assert False, f'Unhandled instruction: {op.type}'
 
 
 def setup_macros_and_functions(out: TextIO) -> None:
@@ -210,7 +236,7 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
         setup_macros_and_functions(out)
 
         out.write('_main:\n')
-        assert COUNT_OPS == 18, 'Exhaustive handling of operands in `compile_program`'
+        assert COUNT_OPS == 20, 'Exhaustive handling of operands in `compile_program`'
         for op_index in range(len(prg)):
             op = prg[op_index]
             out.write(f'label_{op_index}:\n')
@@ -327,8 +353,24 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   pop w0\n')
                 out.write('   pop x1\n')
                 out.write('   strb w0, [x1]\n')
+            elif op.type == OP_SYSCALL1:
+                # Pops the top two values on the stack and makes a syscall with the top value as the syscall number and
+                # the second value as the argument
+                out.write('   ;; -- syscall1 --\n')
+                out.write('   pop x16\n')
+                out.write('   pop x0\n')
+                out.write('   svc #0\n')
+            elif op.type == OP_SYSCALL3:
+                # Pops the top four values on the stack and makes a syscall with the top value as the syscall number and
+                # the next three values as the arguments
+                out.write('   ;; -- syscall3 --\n')
+                out.write('   pop x16\n')
+                out.write('   pop x2\n')
+                out.write('   pop x1\n')
+                out.write('   pop x0\n')
+                out.write('   svc #0\n')
             else:
-                assert False, 'Unhandled instruction'
+                assert False, f'Unhandled instruction {op.type}'
         out.write(f'label_{op_index + 1}:\n')
         out.write('   mov x0, #0\n')
         out.write('   mov x16, #1\n')
@@ -370,7 +412,7 @@ def lex_file(file_path: str) -> List[Token]:
 
 def construct_blocks(prg: List[Operation]) -> List[Operation]:
     stack = []
-    assert COUNT_OPS == 18, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
+    assert COUNT_OPS == 20, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
                              'be implemented here. Only those that form blocks')
     for op_index in range(len(prg)):
         op = prg[op_index]
@@ -404,7 +446,7 @@ def construct_blocks(prg: List[Operation]) -> List[Operation]:
 
 
 def convert_to_op(token: Token) -> Operation:
-    assert COUNT_OPS == 18, 'Exhaustive handling of operands in `convert_to_op`'
+    assert COUNT_OPS == 20, 'Exhaustive handling of operands in `convert_to_op`'
 
     if token.value == '+':
         return Operation(OP_ADD, token.get_location())
@@ -440,6 +482,10 @@ def convert_to_op(token: Token) -> Operation:
         return Operation(OP_LOAD, token.get_location())
     elif token.value == 'save':
         return Operation(OP_SAVE, token.get_location())
+    elif token.value == 'syscall1':
+        return Operation(OP_SYSCALL1, token.get_location())
+    elif token.value == 'syscall3':
+        return Operation(OP_SYSCALL3, token.get_location())
     else:
         try:
             return Operation(OP_PUSH, token.get_location(), value=int(token.value))
