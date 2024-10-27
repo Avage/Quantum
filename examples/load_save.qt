@@ -1,0 +1,17 @@
+# Take 97 and save it to mem + 0. 97 is the ASCII value of 'a'
+mem 0 + 97 save
+
+# Take 98 and save it to mem + 1. 98 is the ASCII value of 'b'
+mem 1 + 98 save
+
+# Take 99 and save it to mem + 2. 99 is the ASCII value of 'c'
+mem 2 + 99 save
+
+# Load the value from mem + 0, increment it by 1, and save it to mem + 0. 98 is the ASCII value of 'b'
+mem 0 + clone load 1 + save
+
+# Load the value from mem + 1, increment it by 1, and save it to mem + 1. 99 is the ASCII value of 'c'
+mem 1 + clone load 1 + save
+
+# Load the value from mem + 2, increment it by 1, and save it to mem + 2. 100 is the ASCII value of 'd'
+mem 2 + clone load 1 + save
