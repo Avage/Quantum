@@ -25,8 +25,7 @@ To compile and run, use `-r` flag:
 $ python3 quantum.py com -r <file-path.qt>
 ```
 
-
-[//]: # (Push, dump, clone, clone2)
+[//]: # (Push, dump, drop, swap, over, clone, clone2)
 <h3 style="color: #ffa7d7;">Stack Operations</h3>
 `<arg1>` - Pushes `<arg1>` into stack
 
@@ -34,11 +33,15 @@ $ python3 quantum.py com -r <file-path.qt>
 
 `<arg1> dump` - Pops and prints top value of stack
 
+`<arg1> drop` - Pops top value of stack
+
+`<arg1> <arg2> swap` - Swaps the top two values of stack
+
+`<arg1> <arg2> over` - Clones the second value of stack to the top
+
 `<arg1> clone` - Clones the top value of stack
 
 `<arg1> <arg2> clone2` - Clones the top two values of stack in same order
-
-[//]: # (Swap, pop)
 
 [//]: # (+ -)
 <h3 style="color: #ffa7d7;">Arithmetic Operations</h3>
@@ -48,20 +51,34 @@ stack
 `<arg1> <arg2> -` - Pops top two values of stack, subtracts top value from second value, and pushes the result back
 into stack
 
+[//]: # (Bor, band, shr, shl)
+<h3 style="color: #ffa7d7;">Bitwise Operations</h3>
+`<arg1> <arg2> bor` - Pops top two values of stack, performs bitwise OR operation, and pushes the result back into stack
+
+`<arg1> <arg2> band` - Pops top two values of stack, performs bitwise AND operation, and pushes the result back into
+stack
+
+`<arg1> <arg2> shr` - Pops top two values of stack, performs bitwise right shift operation, and pushes the result back
+into stack
+
+`<arg1> <arg2> shl` - Pops top two values of stack, performs bitwise left shift operation, and pushes the result back
+into stack
+
+
 [//]: # (Eq, gt, ge, lt, le)
 <h3 style="color: #ffa7d7;">Comparison Operations</h3>
 `<arg1> <arg2> eq` - Pops top two values of stack, compares them, and pushes 1 if they are equal, 0 otherwise
 
-`<arg1> <arg2> gt` - Pops top two values of stack, compares them, and pushes 1 if the first value is greater than the 
+`<arg1> <arg2> gt` - Pops top two values of stack, compares them, and pushes 1 if the first value is greater than the
 second value, 0 otherwise
 
-`<arg1> <arg2> ge` - Pops top two values of stack, compares them, and pushes 1 if the first value is greater than or 
+`<arg1> <arg2> ge` - Pops top two values of stack, compares them, and pushes 1 if the first value is greater than or
 equal to the second value, 0 otherwise
 
-`<arg1> <arg2> lt` - Pops top two values of stack, compares them, and pushes 1 if the first value is less than the 
+`<arg1> <arg2> lt` - Pops top two values of stack, compares them, and pushes 1 if the first value is less than the
 second value, 0 otherwise
 
-`<arg1> <arg2> le` - Pops top two values of stack, compares them, and pushes 1 if the first value is less than or equal 
+`<arg1> <arg2> le` - Pops top two values of stack, compares them, and pushes 1 if the first value is less than or equal
 to the second value, 0 otherwise
 
 [//]: # (If, else, end)
@@ -71,7 +88,7 @@ executes `<else-body>`
 
 [//]: # (While, do, end)
 <h3 style="color: #ffa7d7;">Loops</h3>
-`<arg1> while <condition> do <body> end` - Pops top value of stack, if it is 1, executes `<body>` and repeats the 
+`<arg1> while <condition> do <body> end` - Pops top value of stack, if it is 1, executes `<body>` and repeats the
 process, otherwise stops
 
 [//]: # (Mem, load, store)
@@ -84,10 +101,10 @@ process, otherwise stops
 
 [//]: # (Syscall1, syscall3)
 <h3 style="color: #ffa7d7;">Syscalls</h3>
-`<arg1> <arg2> syscall1` - Makes syscall with top two values of stack. `<arg1>` is syscall argument, `<arg2>` is 
+`<arg1> <arg2> syscall1` - Makes syscall with top two values of stack. `<arg1>` is syscall argument, `<arg2>` is
 syscall number
 
-`<arg1> <arg2> <arg3> <arg4> syscall3` - Makes syscall with top four values of stack. `<arg1>`, `<arg2>`, `<arg3>` 
+`<arg1> <arg2> <arg3> <arg4> syscall3` - Makes syscall with top four values of stack. `<arg1>`, `<arg2>`, `<arg3>`
 are syscall arguments, `<arg4>` is syscall number
 
 [//]: # (#)

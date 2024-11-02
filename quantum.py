@@ -21,6 +21,9 @@ OP_PUSH = enum(True)
 OP_ADD = enum()
 OP_SUB = enum()
 OP_DUMP = enum()
+OP_DROP = enum()
+OP_SWAP = enum()
+OP_OVER = enum()
 OP_CLONE = enum()
 OP_CLONE2 = enum()
 OP_EQ = enum()
@@ -28,6 +31,10 @@ OP_GT = enum()
 OP_GE = enum()
 OP_LT = enum()
 OP_LE = enum()
+OP_BOR = enum()
+OP_BAND = enum()
+OP_SHR = enum()
+OP_SHL = enum()
 OP_IF = enum()
 OP_ELSE = enum()
 OP_END = enum()
@@ -68,7 +75,7 @@ class Operation:
 
 
 def simulate_program(prg: List[Operation]) -> None:
-    assert COUNT_OPS == 21, 'Exhaustive handling of operands in `simulate_program`'
+    assert COUNT_OPS == 28, 'Exhaustive handling of operands in `simulate_program`'
     stack = []
     memory = bytearray(MEMORY_ALLOCATION)
     op_index = 0
@@ -90,6 +97,22 @@ def simulate_program(prg: List[Operation]) -> None:
         elif op.type == OP_DUMP:
             val_1 = stack.pop()
             print(val_1)
+            op_index += 1
+        elif op.type == OP_DROP:
+            stack.pop()
+            op_index += 1
+        elif op.type == OP_SWAP:
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_2)
+            stack.append(val_1)
+            op_index += 1
+        elif op.type == OP_OVER:
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_1)
+            stack.append(val_2)
+            stack.append(val_1)
             op_index += 1
         elif op.type == OP_CLONE:
             val_1 = stack.pop()
@@ -128,6 +151,26 @@ def simulate_program(prg: List[Operation]) -> None:
             val_2 = stack.pop()
             val_1 = stack.pop()
             stack.append(int(val_1 <= val_2))
+            op_index += 1
+        elif op.type == OP_BOR:
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_1 | val_2)
+            op_index += 1
+        elif op.type == OP_BAND:
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_1 & val_2)
+            op_index += 1
+        elif op.type == OP_SHR:
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_1 >> val_2)
+            op_index += 1
+        elif op.type == OP_SHL:
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_1 << val_2)
             op_index += 1
         elif op.type == OP_IF:
             assert op.jump is not None, "`end` is not referenced in `if` block"
@@ -245,7 +288,7 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
         setup_macros_and_functions(out)
 
         out.write('_main:\n')
-        assert COUNT_OPS == 21, 'Exhaustive handling of operands in `compile_program`'
+        assert COUNT_OPS == 28, 'Exhaustive handling of operands in `compile_program`'
         for op_index in range(len(prg)):
             op = prg[op_index]
             out.write(f'label_{op_index}:\n')
@@ -273,6 +316,25 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   ;; -- dump --\n')
                 out.write('   pop x0\n')
                 out.write('   bl dump\n')
+            elif op.type == OP_DROP:
+                # Pops the value at the top of the stack
+                out.write('   ;; -- drop --\n')
+                out.write('   pop x0\n')
+            elif op.type == OP_SWAP:
+                # Pops the top two values on the stack and pushes them back in reverse order
+                out.write('   ;; -- swap --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   push x0\n')
+                out.write('   push x1\n')
+            elif op.type == OP_OVER:
+                # Pops the top two values on the stack and pushes back in order of second, top, second
+                out.write('   ;; -- over --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   push x1\n')
+                out.write('   push x0\n')
+                out.write('   push x1\n')
             elif op.type == OP_CLONE:
                 # Pops the value at the top of the stack and pushes it back 2 times
                 out.write('   ;; -- clone --\n')
@@ -289,7 +351,7 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   push x0\n')
                 out.write('   push x1\n')
             elif op.type == OP_EQ:
-                # Pops the top two values on the stack and pushes the result of the EQ comparison
+                # Pops the top two values on the stack and pushes the result of the EQUAL comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
                 out.write('   pop x1\n')
@@ -297,7 +359,7 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   cset x0, eq\n')
                 out.write('   push x0\n')
             elif op.type == OP_GT:
-                # Pops the top two values on the stack and pushes the result of the GT comparison
+                # Pops the top two values on the stack and pushes the result of the GREATER THAN comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
                 out.write('   pop x1\n')
@@ -305,7 +367,7 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   cset x0, gt\n')
                 out.write('   push x0\n')
             elif op.type == OP_GE:
-                # Pops the top two values on the stack and pushes the result of the GE comparison
+                # Pops the top two values on the stack and pushes the result of the GREATER OR EQUAL comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
                 out.write('   pop x1\n')
@@ -313,7 +375,7 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   cset x0, ge\n')
                 out.write('   push x0\n')
             elif op.type == OP_LT:
-                # Pops the top two values on the stack and pushes the result of the LT comparison
+                # Pops the top two values on the stack and pushes the result of the LOWER THAN comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
                 out.write('   pop x1\n')
@@ -321,12 +383,40 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   cset x0, lt\n')
                 out.write('   push x0\n')
             elif op.type == OP_LE:
-                # Pops the top two values on the stack and pushes the result of the LE comparison
+                # Pops the top two values on the stack and pushes the result of the LOWER OR EQUAL comparison
                 out.write('   ;; -- eq --\n')
                 out.write('   pop x0\n')
                 out.write('   pop x1\n')
                 out.write('   cmp x1, x0\n')
                 out.write('   cset x0, le\n')
+                out.write('   push x0\n')
+            elif op.type == OP_BOR:
+                # Pops the top two values on the stack and pushes the result of the BITWISE OR operation
+                out.write('   ;; -- bor --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   orr x0, x0, x1\n')
+                out.write('   push x0\n')
+            elif op.type == OP_BAND:
+                # Pops the top two values on the stack and pushes the result of the BITWISE AND operation
+                out.write('   ;; -- band --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   and x0, x0, x1\n')
+                out.write('   push x0\n')
+            elif op.type == OP_SHR:
+                # Pops the top two values on the stack and pushes the result of the SHIFT RIGHT operation
+                out.write('   ;; -- shr --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   lsr x0, x1, x0\n')
+                out.write('   push x0\n')
+            elif op.type == OP_SHL:
+                # Pops the top two values on the stack and pushes the result of the SHIFT LEFT operation
+                out.write('   ;; -- shl --\n')
+                out.write('   pop x0\n')
+                out.write('   pop x1\n')
+                out.write('   lsl x0, x1, x0\n')
                 out.write('   push x0\n')
             elif op.type == OP_IF:
                 # Pops the top value on the stack and jumps to the END of the IF block if it is 0
@@ -430,7 +520,7 @@ def lex_file(file_path: str) -> List[Token]:
 
 def construct_blocks(prg: List[Operation]) -> List[Operation]:
     stack = []
-    assert COUNT_OPS == 21, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
+    assert COUNT_OPS == 28, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
                              'be implemented here. Only those that form blocks')
     for op_index in range(len(prg)):
         op = prg[op_index]
@@ -464,7 +554,7 @@ def construct_blocks(prg: List[Operation]) -> List[Operation]:
 
 
 def convert_to_op(token: Token) -> Operation:
-    assert COUNT_OPS == 21, 'Exhaustive handling of operands in `convert_to_op`'
+    assert COUNT_OPS == 28, 'Exhaustive handling of operands in `convert_to_op`'
 
     if token.value == '+':
         return Operation(OP_ADD, token.get_location())
@@ -472,6 +562,12 @@ def convert_to_op(token: Token) -> Operation:
         return Operation(OP_SUB, token.get_location())
     elif token.value == 'dump':
         return Operation(OP_DUMP, token.get_location())
+    elif token.value == 'drop':
+        return Operation(OP_DROP, token.get_location())
+    elif token.value == 'swap':
+        return Operation(OP_SWAP, token.get_location())
+    elif token.value == 'over':
+        return Operation(OP_OVER, token.get_location())
     elif token.value == 'clone':
         return Operation(OP_CLONE, token.get_location())
     elif token.value == 'clone2':
@@ -486,6 +582,14 @@ def convert_to_op(token: Token) -> Operation:
         return Operation(OP_LT, token.get_location())
     elif token.value == '<=':
         return Operation(OP_LE, token.get_location())
+    elif token.value == 'bor':
+        return Operation(OP_BOR, token.get_location())
+    elif token.value == 'band':
+        return Operation(OP_BAND, token.get_location())
+    elif token.value == 'shr':
+        return Operation(OP_SHR, token.get_location())
+    elif token.value == 'shl':
+        return Operation(OP_SHL, token.get_location())
     elif token.value == 'if':
         return Operation(OP_IF, token.get_location())
     elif token.value == 'else':

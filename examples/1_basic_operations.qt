@@ -1,11 +1,23 @@
 # Push 11000, push 117, add 117 to 11000 and dump result
 11000 117 + dump
 
+# Push 123, push 456, swap top 2 values and dump result
+123 456 swap dump dump
+
+# Push 23, push 45, clone the second value to the top and dump result
+23 45 over dump dump dump
+
 # Push 120, push 3, subtract 3 from 120, clone the result and dump result 2 times
 120 3 - clone dump dump
 
-# Push 17, push 71, clone that values and dump them
-17 71 clone2 dump dump dump dump
+# Push 17, push 71, clone that values and dump top 2 values, and drop other 2
+17 71 clone2 dump dump drop drop
 
 # Push 4, push 5, compare if 4 is greater or equal than 5, push 1 if true (0 if false) and dump result
 4 5 >= 5 dump
+
+# Push 8, push 3, right shift 8 by 3 and dump result
+8 3 shr dump
+
+# Push 4, push 8, bitwise or 4 and 8 and dump result
+4 8 bor dump
