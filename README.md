@@ -26,7 +26,7 @@ $ python3 quantum.py com -r <file-path.qt>
 ```
 
 
-[//]: # (Push, dump, clone)
+[//]: # (Push, dump, clone, clone2)
 <h3 style="color: #ffa7d7;">Stack Operations</h3>
 `<arg1>` - Pushes `<arg1>` into stack
 
@@ -35,6 +35,10 @@ $ python3 quantum.py com -r <file-path.qt>
 `<arg1> dump` - Pops and prints top value of stack
 
 `<arg1> clone` - Clones the top value of stack
+
+`<arg1> <arg2> clone2` - Clones the top two values of stack in same order
+
+[//]: # (Swap, pop)
 
 [//]: # (+ -)
 <h3 style="color: #ffa7d7;">Arithmetic Operations</h3>
@@ -85,8 +89,6 @@ syscall number
 
 `<arg1> <arg2> <arg3> <arg4> syscall3` - Makes syscall with top four values of stack. `<arg1>`, `<arg2>`, `<arg3>` 
 are syscall arguments, `<arg4>` is syscall number
-
-[//]: # (Syscall1, syscall3)
 
 [//]: # (#)
 <h3 style="color: #ffa7d7;">Comments</h3>

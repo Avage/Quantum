@@ -22,6 +22,7 @@ OP_ADD = enum()
 OP_SUB = enum()
 OP_DUMP = enum()
 OP_CLONE = enum()
+OP_CLONE2 = enum()
 OP_EQ = enum()
 OP_GT = enum()
 OP_GE = enum()
@@ -67,7 +68,7 @@ class Operation:
 
 
 def simulate_program(prg: List[Operation]) -> None:
-    assert COUNT_OPS == 20, 'Exhaustive handling of operands in `simulate_program`'
+    assert COUNT_OPS == 21, 'Exhaustive handling of operands in `simulate_program`'
     stack = []
     memory = bytearray(MEMORY_ALLOCATION)
     op_index = 0
@@ -94,6 +95,14 @@ def simulate_program(prg: List[Operation]) -> None:
             val_1 = stack.pop()
             stack.append(val_1)
             stack.append(val_1)
+            op_index += 1
+        elif op.type == OP_CLONE2:
+            val_2 = stack.pop()
+            val_1 = stack.pop()
+            stack.append(val_1)
+            stack.append(val_2)
+            stack.append(val_1)
+            stack.append(val_2)
             op_index += 1
         elif op.type == OP_EQ:
             val_2 = stack.pop()
@@ -236,7 +245,7 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
         setup_macros_and_functions(out)
 
         out.write('_main:\n')
-        assert COUNT_OPS == 20, 'Exhaustive handling of operands in `compile_program`'
+        assert COUNT_OPS == 21, 'Exhaustive handling of operands in `compile_program`'
         for op_index in range(len(prg)):
             op = prg[op_index]
             out.write(f'label_{op_index}:\n')
@@ -270,6 +279,15 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   pop x0\n')
                 out.write('   push x0\n')
                 out.write('   push x0\n')
+            elif op.type == OP_CLONE2:
+                # Pops the top two values on the stack and pushes them back 2 times in same order
+                out.write('   ; -- clone2 --\n')
+                out.write('   pop x1\n')
+                out.write('   pop x0\n')
+                out.write('   push x0\n')
+                out.write('   push x1\n')
+                out.write('   push x0\n')
+                out.write('   push x1\n')
             elif op.type == OP_EQ:
                 # Pops the top two values on the stack and pushes the result of the EQ comparison
                 out.write('   ;; -- eq --\n')
@@ -346,11 +364,11 @@ def compile_program(prg: List[Operation], file_path: str) -> None:
                 out.write('   ;; -- load --\n')
                 out.write('   pop x0\n')
                 out.write('   ldrb w1, [x0]\n')
-                out.write('   push w1\n')
+                out.write('   push x1\n')
             elif op.type == OP_SAVE:
                 # Pops the top two values on the stack and saves the top value to the memory address of the second value
                 out.write('   ;; -- save --\n')
-                out.write('   pop w0\n')
+                out.write('   pop x0\n')
                 out.write('   pop x1\n')
                 out.write('   strb w0, [x1]\n')
             elif op.type == OP_SYSCALL1:
@@ -412,7 +430,7 @@ def lex_file(file_path: str) -> List[Token]:
 
 def construct_blocks(prg: List[Operation]) -> List[Operation]:
     stack = []
-    assert COUNT_OPS == 20, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
+    assert COUNT_OPS == 21, ('Exhaustive handling of operands in `construct_blocks`. Note, not all operations need to '
                              'be implemented here. Only those that form blocks')
     for op_index in range(len(prg)):
         op = prg[op_index]
@@ -446,7 +464,7 @@ def construct_blocks(prg: List[Operation]) -> List[Operation]:
 
 
 def convert_to_op(token: Token) -> Operation:
-    assert COUNT_OPS == 20, 'Exhaustive handling of operands in `convert_to_op`'
+    assert COUNT_OPS == 21, 'Exhaustive handling of operands in `convert_to_op`'
 
     if token.value == '+':
         return Operation(OP_ADD, token.get_location())
@@ -456,6 +474,8 @@ def convert_to_op(token: Token) -> Operation:
         return Operation(OP_DUMP, token.get_location())
     elif token.value == 'clone':
         return Operation(OP_CLONE, token.get_location())
+    elif token.value == 'clone2':
+        return Operation(OP_CLONE2, token.get_location())
     elif token.value == '=':
         return Operation(OP_EQ, token.get_location())
     elif token.value == '>':

@@ -4,5 +4,8 @@
 # Push 120, push 3, subtract 3 from 120, clone the result and dump result 2 times
 120 3 - clone dump dump
 
+# Push 17, push 71, clone that values and dump them
+17 71 clone2 dump dump dump dump
+
 # Push 4, push 5, compare if 4 is greater or equal than 5, push 1 if true (0 if false) and dump result
 4 5 >= 5 dump
