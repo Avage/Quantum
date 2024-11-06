@@ -1,29 +1,24 @@
-mem 28 + 1 save
+mem 88 + 1 save
 
-0 while clone 30 < do
-
-    0 while clone 30 < do
+0 while clone 88 < do
+    0 while clone 90 < do
         clone mem + load
-
         if
-            mem 30 + 42 save
+            clone mem + 90 + 42 save
         else
-            mem 30 + 32 save
+            clone mem + 90 + 32 save
         end
-
-        1 mem 30 + 1 4 syscall3
-
         1 +
     end
     drop
 
-    mem 30 + 10 save
-    1 mem 30 + 1 4 syscall3
+    mem 90 + 10 save
+    1 mem 90 + 91 4 syscall3
 
     mem load 1 shl
     mem 1 + load
     bor
-    1 while clone 28 < do
+    1 while clone 88 < do
         swap 1 shl 7 band
         over mem + 1 + load bor
         clone2 110 swap shr 1 band
