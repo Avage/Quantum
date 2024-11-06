@@ -1,24 +1,29 @@
-mem 88 + 1 save
+# Implementation of the Rule 110 cellular automaton
+# https://en.wikipedia.org/wiki/Rule_110
 
-0 while clone 88 < do
-    0 while clone 90 < do
+# 100 steps
+
+mem 100 + 1 save
+
+0 while clone 100 < do
+    0 while clone 102 < do
         clone mem + load
         if
-            clone mem + 90 + 42 save
+            clone mem + 102 + 42 save
         else
-            clone mem + 90 + 32 save
+            clone mem + 102 + 32 save
         end
         1 +
     end
     drop
 
-    mem 90 + 10 save
-    1 mem 90 + 91 4 syscall3
+    mem 102 + 10 save
+    1 mem 102 + 102 4 syscall3
 
     mem load 1 shl
     mem 1 + load
     bor
-    1 while clone 88 < do
+    1 while clone 100 < do
         swap 1 shl 7 band
         over mem + 1 + load bor
         clone2 110 swap shr 1 band
