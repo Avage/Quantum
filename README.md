@@ -30,7 +30,12 @@ $ python3 quantum.py com -r <file-path.qt>
 
 `<arg1>` - Pushes `<arg1>` into stack
 
-<h4 style="color: #ffa7d7;">From here on, </h4>`<argX>`<h4 style="color: #ffa7d7;"> refers to the top values of the stack</h4>
+<p style="color: #ffa7d7; font-weight: bold">From here on, </p>
+
+`<argX>`
+
+<p style="color: #ffa7d7; font-weight: bold"> refers to the top values of the
+stack</p>
 
 `<arg1> dump` - Pops and prints top value of stack
 
@@ -46,6 +51,7 @@ $ python3 quantum.py com -r <file-path.qt>
 
 [//]: # (+ -)
 <h3 style="color: #ffa7d7;">Arithmetic Operations</h3>
+
 `<arg1> <arg2> +` - Pops top two values of stack, adds second value to first value, and pushes the result back into
 stack
 
@@ -54,6 +60,7 @@ into stack
 
 [//]: # (Bor, band, shr, shl)
 <h3 style="color: #ffa7d7;">Bitwise Operations</h3>
+
 `<arg1> <arg2> bor` - Pops top two values of stack, performs bitwise OR operation, and pushes the result back into stack
 
 `<arg1> <arg2> band` - Pops top two values of stack, performs bitwise AND operation, and pushes the result back into
@@ -68,6 +75,7 @@ into stack
 
 [//]: # (Eq, gt, ge, lt, le)
 <h3 style="color: #ffa7d7;">Comparison Operations</h3>
+
 `<arg1> <arg2> eq` - Pops top two values of stack, compares them, and pushes 1 if they are equal, 0 otherwise
 
 `<arg1> <arg2> gt` - Pops top two values of stack, compares them, and pushes 1 if the first value is greater than the
@@ -84,16 +92,19 @@ to the second value, 0 otherwise
 
 [//]: # (If, else, end)
 <h3 style="color: #ffa7d7;">Conditions</h3>
+
 `<arg1> if <if-body> else <else-body> end` - Pops top value of stack, if it is 1, executes `<if-body>`, otherwise
 executes `<else-body>`
 
 [//]: # (While, do, end)
 <h3 style="color: #ffa7d7;">Loops</h3>
+
 `<arg1> while <condition> do <body> end` - Pops top value of stack, if it is 1, executes `<body>` and repeats the
 process, otherwise stops
 
 [//]: # (Mem, load, store)
 <h3 style="color: #ffa7d7;">Memory</h3>
+
 `mem` - Pushes the memory address at the top of the stack
 
 `<arg1> load` - Pops top value of stack, gets the value from memory at that address, and pushes it into stack
@@ -102,6 +113,7 @@ process, otherwise stops
 
 [//]: # (Syscall1, syscall3)
 <h3 style="color: #ffa7d7;">Syscalls</h3>
+
 `<arg1> <arg2> syscall1` - Makes syscall with top two values of stack. `<arg1>` is syscall argument, `<arg2>` is
 syscall number
 
@@ -110,4 +122,5 @@ are syscall arguments, `<arg4>` is syscall number
 
 [//]: # (#)
 <h3 style="color: #ffa7d7;">Comments</h3>
+
 `#` - Ignores the rest of the line
